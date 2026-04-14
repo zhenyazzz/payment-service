@@ -1,0 +1,19 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:${PAYMENT_POSTGRES_PORT:5434}/${POSTGRES_DB:payment_service_db}
+    username: ${POSTGRES_USER:payment_service}
+    password: ${POSTGRES_PASSWORD:payment_service_secret}
+    driver-class-name: org.postgresql.Driver
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${PAYMENT_REDIS_PORT:6381}
+
+  liquibase:
+    contexts: dev
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
