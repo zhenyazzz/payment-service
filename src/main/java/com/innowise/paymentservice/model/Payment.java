@@ -6,6 +6,7 @@ import java.time.Instant;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
@@ -16,9 +17,10 @@ import com.innowise.paymentservice.model.enums.PaymentStatus;
 import lombok.Getter;
 import lombok.Setter;
 
-@Document(collection = "payments")
 @Getter
 @Setter
+@CompoundIndex(name = "user_date_idx", def = "{'userId': 1, 'createdAt': 1}")
+@Document(collection = "payments")
 public class Payment {
 
     @Id
