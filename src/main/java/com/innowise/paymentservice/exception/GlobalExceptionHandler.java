@@ -7,6 +7,7 @@ import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -55,7 +56,7 @@ public class GlobalExceptionHandler {
         return toResponse(status, build(status, "Authentication error", ex.getMessage()));
     }
 
-    @ExceptionHandler({ForbiddenException.class, AuthorizationDeniedException.class})
+    @ExceptionHandler({ForbiddenException.class, AuthorizationDeniedException.class, AccessDeniedException.class})
     public ResponseEntity<ProblemDetail> handleForbidden(RuntimeException ex) {
         HttpStatus status = HttpStatus.FORBIDDEN;
         if (ex instanceof ForbiddenException fe) {

@@ -9,6 +9,8 @@ import java.lang.annotation.Target;
 import jakarta.validation.Constraint;
 import jakarta.validation.Payload;
 
+import com.innowise.paymentservice.validation.validator.PaymentFilterValidator;
+
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Constraint(validatedBy = PaymentFilterValidator.class)
