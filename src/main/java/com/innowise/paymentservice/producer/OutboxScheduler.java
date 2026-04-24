@@ -29,8 +29,7 @@ public class OutboxScheduler {
     @Value("${kafka.topic.name}")
     private String topicName;
 
-    
-    @Scheduled(fixedDelayString = "${outbox.scheduler.fixed-delay-ms}")
+    @Scheduled(fixedDelayString = "${outbox.scheduler.fixed-delay-ms:5000}")
     public void processOutboxEvents() {
         List<OutboxEvent> events = outboxEventRepository.findByProcessedFalseOrderByCreatedAtAsc(
             PageRequest.of(0, OUTBOX_FETCH_BATCH_SIZE)
