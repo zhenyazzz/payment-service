@@ -4,7 +4,6 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
 import com.innowise.paymentservice.model.Payment;
-import com.innowise.paymentservice.model.enums.PaymentStatus;
 
 import com.innowise.paymentservice.dto.request.CreatePaymentRequest;
 import com.innowise.paymentservice.dto.response.PaymentResponse;

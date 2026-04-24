@@ -181,10 +181,8 @@ class PaymentServiceImplTest {
             try (MockedStatic<SecurityUtils> securityUtils = Mockito.mockStatic(SecurityUtils.class)) {
                 securityUtils.when(SecurityUtils::isAdmin).thenReturn(false);
 
-                assertThatThrownBy(() -> paymentService.getPaymentById(
-                    payment.getId(),
-                    PaymentTestDataFactory.OTHER_USER_ID
-                ))
+                String paymentId = payment.getId();
+                assertThatThrownBy(() -> paymentService.getPaymentById(paymentId, PaymentTestDataFactory.OTHER_USER_ID))
                     .isInstanceOf(AccessDeniedException.class)
                     .hasMessage("You are not allowed to access this payment");
             }

@@ -24,12 +24,20 @@ import lombok.RequiredArgsConstructor;
 @Repository
 @RequiredArgsConstructor
 public class PaymentRepositoryImpl implements PaymentRepositoryCustom {
+
+    private static final String FIELD_USER_ID = "userId";
+    private static final String FIELD_ORDER_ID = "orderId";
+    private static final String FIELD_STATUS = "status";
+    private static final String FIELD_CREATED_AT = "createdAt";
+    private static final String FIELD_PAYMENT_AMOUNT = "paymentAmount";
+    private static final String ALIAS_TOTAL_AMOUNT = "totalAmount";
+
     private final MongoTemplate mongoTemplate;
 
     @Override
     public BigDecimal sumByUserIdDateRange(String userId, Instant from, Instant to) {
-        Criteria criteria = Criteria.where("userId").is(userId)
-                    .and("createdAt").gte(from).lte(to);
+        Criteria criteria = Criteria.where(FIELD_USER_ID).is(userId)
+                    .and(FIELD_CREATED_AT).gte(from).lte(to);
 
         Aggregation aggregation = buildAggregation(criteria);
 
@@ -38,7 +46,7 @@ public class PaymentRepositoryImpl implements PaymentRepositoryCustom {
 
     @Override
     public BigDecimal sumAllPaymentsDateRange(Instant from, Instant to) {
-        Criteria criteria = Criteria.where("createdAt").gte(from).lte(to);
+        Criteria criteria = Criteria.where(FIELD_CREATED_AT).gte(from).lte(to);
         
         Aggregation aggregation = buildAggregation(criteria);
 
@@ -48,7 +56,7 @@ public class PaymentRepositoryImpl implements PaymentRepositoryCustom {
     private Aggregation buildAggregation(Criteria criteria) {
         return Aggregation.newAggregation(
             Aggregation.match(criteria),
-            Aggregation.group().sum("paymentAmount").as("totalAmount")
+            Aggregation.group().sum(FIELD_PAYMENT_AMOUNT).as(ALIAS_TOTAL_AMOUNT)
         );
     }
 
@@ -69,13 +77,13 @@ public class PaymentRepositoryImpl implements PaymentRepositoryCustom {
         Query query = new Query();
 
         if (criteria.userId() != null) {
-            query.addCriteria(Criteria.where("userId").is(criteria.userId()));
+            query.addCriteria(Criteria.where(FIELD_USER_ID).is(criteria.userId()));
         }
         if (criteria.orderId() != null) {
-            query.addCriteria(Criteria.where("orderId").is(criteria.orderId()));
+            query.addCriteria(Criteria.where(FIELD_ORDER_ID).is(criteria.orderId()));
         }
         if (criteria.status() != null) {
-            query.addCriteria(Criteria.where("status").is(criteria.status()));
+            query.addCriteria(Criteria.where(FIELD_STATUS).is(criteria.status()));
         }
 
         return getPaginatedResult(query, pageable);
@@ -86,16 +94,16 @@ public class PaymentRepositoryImpl implements PaymentRepositoryCustom {
         Query query = new Query();
 
         if (criteria.userId() != null) {
-            query.addCriteria(Criteria.where("userId").is(criteria.userId()));
+            query.addCriteria(Criteria.where(FIELD_USER_ID).is(criteria.userId()));
         }
         if (criteria.orderId() != null) {
-            query.addCriteria(Criteria.where("orderId").is(criteria.orderId()));
+            query.addCriteria(Criteria.where(FIELD_ORDER_ID).is(criteria.orderId()));
         }
         if (criteria.statuses() != null && !criteria.statuses().isEmpty()) {
-            query.addCriteria(Criteria.where("status").in(criteria.statuses()));
+            query.addCriteria(Criteria.where(FIELD_STATUS).in(criteria.statuses()));
         }
         if (criteria.createdFrom() != null || criteria.createdTo() != null) {
-            Criteria dateCriteria = Criteria.where("createdAt");
+            Criteria dateCriteria = Criteria.where(FIELD_CREATED_AT);
             if (criteria.createdFrom() != null) {
                 dateCriteria.gte(criteria.createdFrom());
             }
