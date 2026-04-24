@@ -2,17 +2,22 @@ package com.innowise.paymentservice.repository.impl;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 
-import org.bson.Document;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.AggregationResults;
 import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.aggregation.MatchOperation;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.stereotype.Repository;
 
 import com.innowise.paymentservice.model.Payment;
 import com.innowise.paymentservice.repository.PaymentRepositoryCustom;
+import com.innowise.paymentservice.repository.criteria.PaymentSearchCriteria;
+import com.innowise.paymentservice.repository.criteria.AdvancedPaymentSearchCriteria;
 
 import lombok.RequiredArgsConstructor;
 
@@ -55,8 +60,66 @@ public class PaymentRepositoryImpl implements PaymentRepositoryCustom {
         SumResult sumResult = results.getUniqueMappedResult();
 
         return sumResult != null
-            ? sumResult.getTotalAmount()
+            ? sumResult.totalAmount()
             : BigDecimal.ZERO;
+    }
+
+    @Override
+    public Page<Payment> findPaymentsByCriteria(PaymentSearchCriteria criteria, Pageable pageable) {
+        Query query = new Query();
+
+        if (criteria.userId() != null) {
+            query.addCriteria(Criteria.where("userId").is(criteria.userId()));
+        }
+        if (criteria.orderId() != null) {
+            query.addCriteria(Criteria.where("orderId").is(criteria.orderId()));
+        }
+        if (criteria.status() != null) {
+            query.addCriteria(Criteria.where("status").is(criteria.status()));
+        }
+
+        return getPaginatedResult(query, pageable);
+    }
+
+    @Override
+    public Page<Payment> searchPaymentsByCriteria(AdvancedPaymentSearchCriteria criteria, Pageable pageable) {
+        Query query = new Query();
+
+        if (criteria.userId() != null) {
+            query.addCriteria(Criteria.where("userId").is(criteria.userId()));
+        }
+        if (criteria.orderId() != null) {
+            query.addCriteria(Criteria.where("orderId").is(criteria.orderId()));
+        }
+        if (criteria.statuses() != null && !criteria.statuses().isEmpty()) {
+            query.addCriteria(Criteria.where("status").in(criteria.statuses()));
+        }
+        if (criteria.createdFrom() != null || criteria.createdTo() != null) {
+            Criteria dateCriteria = Criteria.where("createdAt");
+            if (criteria.createdFrom() != null) {
+                dateCriteria.gte(criteria.createdFrom());
+            }
+            if (criteria.createdTo() != null) {
+                dateCriteria.lte(criteria.createdTo());
+            }
+            query.addCriteria(dateCriteria);
+        }
+
+        return getPaginatedResult(query, pageable);
+    }
+
+    private Page<Payment> getPaginatedResult(Query query, Pageable pageable) {
+        Query countQuery = Query.of(query); 
+
+        query.with(pageable);
+
+        List<Payment> payments = mongoTemplate.find(query, Payment.class);
+
+        return PageableExecutionUtils.getPage(
+            payments, 
+            pageable, 
+            () -> mongoTemplate.count(countQuery, Payment.class)
+        );
     }
 
 }
