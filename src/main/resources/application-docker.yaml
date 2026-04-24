@@ -1,11 +1,19 @@
 spring:
-  datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://payment-service-postgresql:5432/payment_service_db}
-    username: ${SPRING_DATASOURCE_USERNAME:payment_service}
-    password: ${SPRING_DATASOURCE_PASSWORD:payment_service_secret}
-    driver-class-name: org.postgresql.Driver
-
+  mongodb:
+    uri: ${SPRING_DATA_MONGODB_URI:mongodb://mongodb:27017/payment_service?replicaSet=rs0}
   data:
     redis:
       host: ${SPRING_DATA_REDIS_HOST:redis}
       port: ${SPRING_DATA_REDIS_PORT:6379}
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:kafka:19092}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
