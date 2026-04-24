@@ -2,7 +2,6 @@ package com.innowise.paymentservice.security;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -38,8 +37,8 @@ public class SecurityUtils {
                 .orElseThrow(() -> new SecurityContextException(USER_NOT_FOUND_MESSAGE));
     }
 
-    public UUID getCurrentUserId() {
-        return requireUser().userId();
+    public String getCurrentUserId() {
+        return requireUser().userId().toString();
     }
 
     public String getCurrentUserEmail() {

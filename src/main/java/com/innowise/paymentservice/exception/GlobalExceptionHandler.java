@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+import com.innowise.paymentservice.exception.conflict.RequestAlreadyProcessingException;
+import com.innowise.paymentservice.exception.external.PaymentProviderUnavailableException;
 import com.innowise.paymentservice.exception.notfound.ResourceNotFoundException;
 import com.innowise.paymentservice.exception.security.ForbiddenException;
 import com.innowise.paymentservice.exception.security.SecurityContextException;
@@ -102,6 +104,18 @@ public class GlobalExceptionHandler {
 
         HttpStatus status = HttpStatus.BAD_REQUEST;
         return toResponse(status, build(status, "Bad request", message));
+    }
+
+    @ExceptionHandler(RequestAlreadyProcessingException.class)
+    public ResponseEntity<ProblemDetail> handleRequestAlreadyProcessing(RequestAlreadyProcessingException ex) {
+        HttpStatus status = HttpStatus.CONFLICT;
+        return toResponse(status, build(status, "Request already processing", ex.getMessage()));
+    }
+
+    @ExceptionHandler(PaymentProviderUnavailableException.class)
+    public ResponseEntity<ProblemDetail> handlePaymentProviderUnavailable(PaymentProviderUnavailableException ex) {
+        HttpStatus status = HttpStatus.SERVICE_UNAVAILABLE;
+        return toResponse(status, build(status, "Payment provider unavailable", ex.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)
