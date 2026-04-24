@@ -16,11 +16,15 @@ import com.innowise.paymentservice.model.enums.PaymentStatus;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 
 @Getter
 @Setter
 @CompoundIndex(name = "user_date_idx", def = "{'userId': 1, 'createdAt': 1}")
 @Document(collection = "payments")
+@AllArgsConstructor
+@NoArgsConstructor
 public class Payment {
 
     @Id

@@ -27,3 +27,8 @@ external:
 outbox:
   scheduler:
     fixed-delay-ms: 1000
+
+logging:
+  level:
+    org.apache.kafka: WARN
+    org.apache.kafka.clients.NetworkClient: ERROR
