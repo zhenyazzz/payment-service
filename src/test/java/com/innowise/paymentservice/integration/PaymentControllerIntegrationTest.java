@@ -479,6 +479,90 @@ class PaymentControllerIntegrationTest extends AbstractIntegrationTest {
                 .expectBody(BigDecimal.class)
                 .value(total -> assertThat(total).isEqualByComparingTo("31.00"));
         }
+
+        @Test
+        @DisplayName("returns zero when range contains only other users' payments")
+        void whenUserHasNoOwnPaymentsInRange_returnsZero() {
+            seedPayment(PAYMENT_B1_ID, ORDER_B1_ID, USER_B, PaymentStatus.SUCCESS, new BigDecimal("99.00"));
+            Instant from = Instant.parse("2025-06-01T00:00:00Z");
+            Instant to = Instant.parse("2025-06-02T00:00:00Z");
+
+            webTestClient
+                .get()
+                .uri(uriBuilder -> uriBuilder
+                    .path("/payments/summary/me")
+                    .queryParam("from", from.toString())
+                    .queryParam("to", to.toString())
+                    .build())
+                .header("X-User-Id", USER_A.toString())
+                .header("X-User-Email", USER_A_EMAIL)
+                .header("X-User-Roles", "ROLE_USER")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(BigDecimal.class)
+                .value(total -> assertThat(total).isEqualByComparingTo("0"));
+        }
+
+        @Test
+        @DisplayName("returns zero when own payments fall outside the requested window")
+        void whenOwnPaymentsOutsideRange_returnsZero() {
+            seedPayment(
+                PAYMENT_A1_ID,
+                ORDER_A1_ID,
+                USER_A,
+                PaymentStatus.SUCCESS,
+                new BigDecimal("15.00"),
+                Instant.parse("2025-06-01T12:00:00Z")
+            );
+            Instant from = Instant.parse("2025-07-01T00:00:00Z");
+            Instant to = Instant.parse("2025-07-02T00:00:00Z");
+
+            webTestClient
+                .get()
+                .uri(uriBuilder -> uriBuilder
+                    .path("/payments/summary/me")
+                    .queryParam("from", from.toString())
+                    .queryParam("to", to.toString())
+                    .build())
+                .header("X-User-Id", USER_A.toString())
+                .header("X-User-Email", USER_A_EMAIL)
+                .header("X-User-Roles", "ROLE_USER")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(BigDecimal.class)
+                .value(total -> assertThat(total).isEqualByComparingTo("0"));
+        }
+
+        @Test
+        @DisplayName("admin calling /summary/me still sums only that principal's payments")
+        void whenAdminRequestsOwnSummary_returnsTotalForPrincipalOnly() {
+            seedPayment(PAYMENT_A1_ID, ORDER_A1_ID, USER_A, PaymentStatus.SUCCESS, new BigDecimal("40.00"));
+            Payment adminPayment = seedPayment(
+                "payment-admin-1",
+                "order-admin-1",
+                USER_C,
+                PaymentStatus.SUCCESS,
+                new BigDecimal("7.50"),
+                Instant.parse("2025-06-01T12:00:00Z")
+            );
+            Instant from = adminPayment.getCreatedAt().minusSeconds(1);
+            Instant to = adminPayment.getCreatedAt().plusSeconds(1);
+
+            webTestClient
+                .get()
+                .uri(uriBuilder -> uriBuilder
+                    .path("/payments/summary/me")
+                    .queryParam("from", from.toString())
+                    .queryParam("to", to.toString())
+                    .build())
+                .header("X-User-Id", USER_C.toString())
+                .header("X-User-Email", USER_C_EMAIL)
+                .header("X-User-Roles", "ROLE_ADMIN")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(BigDecimal.class)
+                .value(total -> assertThat(total).isEqualByComparingTo("7.50"));
+        }
     }
 
     @Nested

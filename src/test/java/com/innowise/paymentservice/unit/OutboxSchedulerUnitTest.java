@@ -13,7 +13,6 @@ import static com.innowise.paymentservice.utils.OutboxTestDataFactory.singlePend
 import static com.innowise.paymentservice.utils.OutboxTestDataFactory.twoPendingOutboxEventsForSuccessfulSend;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -81,9 +80,9 @@ class OutboxSchedulerUnitTest {
             when(outboxEventRepository.findByProcessedFalseOrderByCreatedAtAsc(any(PageRequest.class)))
                 .thenReturn(events);
 
-            when(kafkaTemplate.send(eq(KAFKA_UNIT_TEST_TOPIC), eq(ORDER_ID_1), eq(payloadWithStatus("SUCCESS"))))
+            when(kafkaTemplate.send(KAFKA_UNIT_TEST_TOPIC, ORDER_ID_1, payloadWithStatus("SUCCESS")))
                 .thenReturn(completedKafkaSend());
-            when(kafkaTemplate.send(eq(KAFKA_UNIT_TEST_TOPIC), eq(ORDER_ID_2), eq(payloadWithStatus("FAILED"))))
+            when(kafkaTemplate.send(KAFKA_UNIT_TEST_TOPIC, ORDER_ID_2, payloadWithStatus("FAILED")))
                 .thenReturn(completedKafkaSend());
 
             outboxScheduler.processOutboxEvents();
@@ -106,7 +105,7 @@ class OutboxSchedulerUnitTest {
             when(outboxEventRepository.findByProcessedFalseOrderByCreatedAtAsc(any(PageRequest.class)))
                 .thenReturn(List.of(event));
 
-            when(kafkaTemplate.send(eq(KAFKA_UNIT_TEST_TOPIC), eq(ORDER_ID_1), eq(emptyJsonPayload())))
+            when(kafkaTemplate.send(KAFKA_UNIT_TEST_TOPIC, ORDER_ID_1, emptyJsonPayload()))
                 .thenReturn(failedKafkaSend(new RuntimeException("broker down")));
 
             outboxScheduler.processOutboxEvents();
