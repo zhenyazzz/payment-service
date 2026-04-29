@@ -9,30 +9,28 @@ import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import io.netty.channel.ChannelOption;
-import io.netty.handler.timeout.ReadTimeoutHandler;
-import io.netty.handler.timeout.WriteTimeoutHandler;
 import reactor.netty.http.client.HttpClient;
+import reactor.netty.resources.ConnectionProvider;
 
 @Configuration
 public class WebClientConfig {
 
-    private ReactorClientHttpConnector clientHttpConnector() {
-        HttpClient httpClient = HttpClient.create()
-                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)
-                .responseTimeout(Duration.ofSeconds(5))
-                .doOnConnected(conn -> conn
-                        .addHandlerLast(new ReadTimeoutHandler(5))
-                        .addHandlerLast(new WriteTimeoutHandler(5)));
-        return new ReactorClientHttpConnector(httpClient);
-    }    
-
     @Bean("randomOrgWebClient")
     public WebClient randomOrgWebClient(
-            @Value("${external.random-api.url:https://www.random.org}") String baseUrl) {
-
+            @Value("${external.random-api.url}") String baseUrl) {
+    
+        ConnectionProvider provider = ConnectionProvider.builder("custom")
+                .maxConnections(50)
+                .pendingAcquireTimeout(Duration.ofSeconds(5))
+                .build();
+    
+        HttpClient httpClient = HttpClient.create(provider)
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)
+                .responseTimeout(Duration.ofSeconds(5));
+    
         return WebClient.builder()
-                .clientConnector(clientHttpConnector())
                 .baseUrl(baseUrl)
+                .clientConnector(new ReactorClientHttpConnector(httpClient))
                 .build();
     }
 }

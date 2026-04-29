@@ -24,7 +24,17 @@ public class RandomOrgAcquiringAdapter implements PaymentAcquiringClient {
     @Retry(name = "randomOrgAcquiring", fallbackMethod = "fallbackTransaction")
     public AcquiringResult getAcquiringResult() {
         String responseBody = randomOrgWebClient.get()
-                .uri("/random/integer")
+                .uri(uriBuilder -> uriBuilder
+                    .path("/integers/")
+                    .queryParam("num", 1)
+                    .queryParam("min", 1)
+                    .queryParam("max", 100)
+                    .queryParam("col", 1)
+                    .queryParam("base", 10)
+                    .queryParam("format", "plain")
+                    .queryParam("rnd", "new")
+                    .build()
+                )
                 .retrieve()
                 .bodyToMono(String.class)
                 .block();

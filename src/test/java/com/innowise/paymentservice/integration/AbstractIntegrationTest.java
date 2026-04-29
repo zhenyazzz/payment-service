@@ -2,9 +2,10 @@ package com.innowise.paymentservice.integration;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.ok;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 
 import org.apache.kafka.clients.admin.NewTopic;
 import java.util.stream.Stream;
@@ -78,16 +79,19 @@ public abstract class AbstractIntegrationTest {
     }
 
     protected void stubRandomOrgResponse(int responseCode) {
-        wireMock.stubFor(get(urlEqualTo("/random/integer"))
+        wireMock.stubFor(get(urlPathEqualTo("/integers/"))
+            .withQueryParam("num", equalTo("1"))
             .willReturn(ok(String.valueOf(responseCode))));
     }
 
     protected void verifyRandomOrgCalled() {
-        wireMock.verify(getRequestedFor(urlEqualTo("/random/integer")));
+        wireMock.verify(getRequestedFor(urlPathEqualTo("/integers/"))
+            .withQueryParam("num", equalTo("1")));
     }
 
     protected void verifyRandomOrgCalledTimes(int times) {
-        wireMock.verify(times, getRequestedFor(urlEqualTo("/random/integer")));
+        wireMock.verify(times, getRequestedFor(urlPathEqualTo("/integers/"))
+            .withQueryParam("num", equalTo("1")));
     }
 
     @TestConfiguration(proxyBeanMethods = false)
