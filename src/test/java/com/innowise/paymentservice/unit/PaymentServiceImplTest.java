@@ -18,6 +18,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -30,6 +31,7 @@ import com.innowise.paymentservice.dto.request.AdvancedPaymentSearchFilter;
 import com.innowise.paymentservice.dto.request.CreatePaymentRequest;
 import com.innowise.paymentservice.dto.request.PaymentSearchFilter;
 import com.innowise.paymentservice.dto.response.PaymentResponse;
+import com.innowise.paymentservice.exception.conflict.PaymentAlreadyProcessedException;
 import com.innowise.paymentservice.exception.notfound.PaymentNotFoundException;
 import com.innowise.paymentservice.mapper.PaymentMapper;
 import com.innowise.paymentservice.model.Payment;
@@ -77,6 +79,7 @@ class PaymentServiceImplTest {
             PaymentResponse response = PaymentTestDataFactory.buildPaymentResponse(finalizedPayment);
 
             when(paymentMapper.toEntity(request, PaymentTestDataFactory.USER_ID)).thenReturn(mappedPayment);
+            when(paymentRepository.existsByOrderIdAndStatus(mappedPayment.getOrderId(), PaymentStatus.SUCCESS)).thenReturn(false);
             when(paymentPersistenceService.savePendingPayment(mappedPayment)).thenReturn(savedPayment);
             when(paymentAcquiringClient.getAcquiringResult()).thenReturn(new AcquiringResult(2));
             when(paymentPersistenceService.finalizePaymentAndCreateOutboxEvent(savedPayment, PaymentStatus.SUCCESS))
@@ -104,6 +107,7 @@ class PaymentServiceImplTest {
             PaymentResponse response = PaymentTestDataFactory.buildPaymentResponse(finalizedPayment);
 
             when(paymentMapper.toEntity(request, PaymentTestDataFactory.USER_ID)).thenReturn(mappedPayment);
+            when(paymentRepository.existsByOrderIdAndStatus(mappedPayment.getOrderId(), PaymentStatus.SUCCESS)).thenReturn(false);
             when(paymentPersistenceService.savePendingPayment(mappedPayment)).thenReturn(savedPayment);
             when(paymentAcquiringClient.getAcquiringResult()).thenReturn(new AcquiringResult(3));
             when(paymentPersistenceService.finalizePaymentAndCreateOutboxEvent(savedPayment, PaymentStatus.FAILED))
@@ -117,25 +121,39 @@ class PaymentServiceImplTest {
         }
 
         @Test
-        @DisplayName("creates failed payment when acquiring client throws")
-        void whenAcquiringThrows_createsFailedPayment() {
+        @DisplayName("propagates exception when acquiring client throws")
+        void whenAcquiringThrows_propagatesException() {
             CreatePaymentRequest request = PaymentTestDataFactory.buildCreatePaymentRequest();
             Payment mappedPayment = PaymentTestDataFactory.buildPayment();
             Payment savedPayment = PaymentTestDataFactory.buildPayment(PaymentStatus.PENDING);
-            Payment finalizedPayment = PaymentTestDataFactory.buildPayment(PaymentStatus.FAILED);
-            PaymentResponse response = PaymentTestDataFactory.buildPaymentResponse(finalizedPayment);
 
             when(paymentMapper.toEntity(request, PaymentTestDataFactory.USER_ID)).thenReturn(mappedPayment);
+            when(paymentRepository.existsByOrderIdAndStatus(mappedPayment.getOrderId(), PaymentStatus.SUCCESS)).thenReturn(false);
             when(paymentPersistenceService.savePendingPayment(mappedPayment)).thenReturn(savedPayment);
             when(paymentAcquiringClient.getAcquiringResult()).thenThrow(new RuntimeException("gateway down"));
-            when(paymentPersistenceService.finalizePaymentAndCreateOutboxEvent(savedPayment, PaymentStatus.FAILED))
-                .thenReturn(finalizedPayment);
-            when(paymentMapper.toResponse(finalizedPayment)).thenReturn(response);
 
-            PaymentResponse result = paymentService.createPayment(PaymentTestDataFactory.USER_ID, request);
+            assertThatThrownBy(() -> paymentService.createPayment(PaymentTestDataFactory.USER_ID, request))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("gateway down");
+        }
 
-            assertThat(result).isEqualTo(response);
-            verify(paymentPersistenceService).finalizePaymentAndCreateOutboxEvent(savedPayment, PaymentStatus.FAILED);
+        @Test
+        @DisplayName("throws PaymentAlreadyProcessedException when success finalize hits unique index")
+        void whenFinalizeThrowsDuplicateKey_throwsPaymentAlreadyProcessed() {
+            CreatePaymentRequest request = PaymentTestDataFactory.buildCreatePaymentRequest();
+            Payment mappedPayment = PaymentTestDataFactory.buildPayment();
+            Payment savedPayment = PaymentTestDataFactory.buildPayment(PaymentStatus.PENDING);
+
+            when(paymentMapper.toEntity(request, PaymentTestDataFactory.USER_ID)).thenReturn(mappedPayment);
+            when(paymentRepository.existsByOrderIdAndStatus(mappedPayment.getOrderId(), PaymentStatus.SUCCESS)).thenReturn(false);
+            when(paymentPersistenceService.savePendingPayment(mappedPayment)).thenReturn(savedPayment);
+            when(paymentAcquiringClient.getAcquiringResult()).thenReturn(new AcquiringResult(2));
+            when(paymentPersistenceService.finalizePaymentAndCreateOutboxEvent(savedPayment, PaymentStatus.SUCCESS))
+                .thenThrow(new DuplicateKeyException("duplicate key"));
+
+            assertThatThrownBy(() -> paymentService.createPayment(PaymentTestDataFactory.USER_ID, request))
+                .isInstanceOf(PaymentAlreadyProcessedException.class)
+                .hasMessage("Order already paid: " + mappedPayment.getOrderId());
         }
     }
 

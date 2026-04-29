@@ -72,16 +72,18 @@ public class PaymentTestDataFactory {
     }
 
     public PaymentCreatedEvent buildPaymentCreatedEvent(PaymentStatus status) {
-        return buildPaymentCreatedEvent(PAYMENT_ID, ORDER_ID, USER_ID, status);
+        return buildPaymentCreatedEvent(PAYMENT_ID, ORDER_ID, USER_ID, PAYMENT_AMOUNT, status, FIXED_INSTANT);
     }
 
     public PaymentCreatedEvent buildPaymentCreatedEvent(
         String paymentId,
         String orderId,
         String userId,
-        PaymentStatus status
+        BigDecimal paymentAmount,
+        PaymentStatus status,
+        Instant createdAt
     ) {
-        return new PaymentCreatedEvent(paymentId, orderId, userId, status);
+        return new PaymentCreatedEvent(paymentId, orderId, userId, paymentAmount, status, createdAt);
     }
 
     public CreatePaymentRequest buildCreatePaymentRequest() {

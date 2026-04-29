@@ -477,7 +477,7 @@ class PaymentControllerIntegrationTest extends AbstractIntegrationTest {
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody(BigDecimal.class)
-                .value(total -> assertThat(total).isEqualByComparingTo("31.00"));
+                .value(total -> assertThat(total).isEqualByComparingTo("10.25"));
         }
 
         @Test
@@ -591,7 +591,7 @@ class PaymentControllerIntegrationTest extends AbstractIntegrationTest {
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody(BigDecimal.class)
-                .value(total -> assertThat(total).isEqualByComparingTo("131.00"));
+                .value(total -> assertThat(total).isEqualByComparingTo("110.25"));
         }
 
         @Test
