@@ -3,6 +3,7 @@ package com.innowise.paymentservice.service.impl;
 import java.math.BigDecimal;
 import java.time.Instant;
 
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
@@ -14,6 +15,7 @@ import com.innowise.paymentservice.dto.request.AdvancedPaymentSearchFilter;
 import com.innowise.paymentservice.dto.request.CreatePaymentRequest;
 import com.innowise.paymentservice.dto.request.PaymentSearchFilter;
 import com.innowise.paymentservice.dto.response.PaymentResponse;
+import com.innowise.paymentservice.exception.conflict.PaymentAlreadyProcessedException;
 import com.innowise.paymentservice.exception.notfound.PaymentNotFoundException;
 import com.innowise.paymentservice.mapper.PaymentMapper;
 import com.innowise.paymentservice.persistence.PaymentPersistenceService;
@@ -38,25 +40,27 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     public PaymentResponse createPayment(String currentUserId, CreatePaymentRequest createPaymentRequest) {
         Payment payment = paymentMapper.toEntity(createPaymentRequest, currentUserId);
+
+        if (paymentRepository.existsByOrderIdAndStatus(payment.getOrderId(), PaymentStatus.SUCCESS)) {
+            throw new PaymentAlreadyProcessedException("Order already paid: " + payment.getOrderId());
+        }
+
         payment = paymentPersistenceService.savePendingPayment(payment);
 
-        PaymentStatus finalStatus;
+        AcquiringResult acquiringResult = paymentAcquiringClient.getAcquiringResult();
+
+        PaymentStatus finalStatus = (acquiringResult.responseCode() % 2 == 0) 
+            ? PaymentStatus.SUCCESS
+            : PaymentStatus.FAILED;
+
         try {
-            AcquiringResult acquiringResult = paymentAcquiringClient.getAcquiringResult();
-
-            finalStatus = (acquiringResult.responseCode() % 2 == 0) 
-                ? PaymentStatus.SUCCESS
-                : PaymentStatus.FAILED;
-
-        } catch (Exception e) {
-            finalStatus = PaymentStatus.FAILED;
+            Payment finalizedPayment = paymentPersistenceService.finalizePaymentAndCreateOutboxEvent(
+                payment, finalStatus
+            );
+            return paymentMapper.toResponse(finalizedPayment);
+        } catch (DuplicateKeyException e) {
+            throw new PaymentAlreadyProcessedException("Order already paid: " + payment.getOrderId());
         }
-        
-        Payment finalizedPayment = paymentPersistenceService.finalizePaymentAndCreateOutboxEvent(
-            payment, finalStatus
-        );
-        
-        return paymentMapper.toResponse(finalizedPayment);
     }
 
     @Override

@@ -15,6 +15,7 @@ import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.stereotype.Repository;
 
 import com.innowise.paymentservice.model.Payment;
+import com.innowise.paymentservice.model.enums.PaymentStatus;
 import com.innowise.paymentservice.repository.PaymentRepositoryCustom;
 import com.innowise.paymentservice.repository.criteria.PaymentSearchCriteria;
 import com.innowise.paymentservice.repository.criteria.AdvancedPaymentSearchCriteria;
@@ -37,7 +38,8 @@ public class PaymentRepositoryImpl implements PaymentRepositoryCustom {
     @Override
     public BigDecimal sumByUserIdDateRange(String userId, Instant from, Instant to) {
         Criteria criteria = Criteria.where(FIELD_USER_ID).is(userId)
-                    .and(FIELD_CREATED_AT).gte(from).lte(to);
+                    .and(FIELD_CREATED_AT).gte(from).lte(to)
+                    .and(FIELD_STATUS).is(PaymentStatus.SUCCESS);
 
         Aggregation aggregation = buildAggregation(criteria);
 
@@ -46,7 +48,8 @@ public class PaymentRepositoryImpl implements PaymentRepositoryCustom {
 
     @Override
     public BigDecimal sumAllPaymentsDateRange(Instant from, Instant to) {
-        Criteria criteria = Criteria.where(FIELD_CREATED_AT).gte(from).lte(to);
+        Criteria criteria = Criteria.where(FIELD_CREATED_AT).gte(from).lte(to)
+        .and(FIELD_STATUS).is(PaymentStatus.SUCCESS);
         
         Aggregation aggregation = buildAggregation(criteria);
 

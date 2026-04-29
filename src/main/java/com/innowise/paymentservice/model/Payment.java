@@ -21,7 +21,14 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @Setter
-@CompoundIndex(name = "user_date_idx", def = "{'userId': 1, 'createdAt': 1}")
+@CompoundIndex(name = "summary_user_date_success_idx", def = "{'userId': 1, 'createdAt': 1}", partialFilter = "{ 'status': 'SUCCESS' }")
+@CompoundIndex(name = "summary_date_success_idx", def = "{'createdAt': 1}", partialFilter = "{ 'status': 'SUCCESS' }")
+@CompoundIndex(
+    name = "order_success_unique_idx",
+    def = "{'orderId': 1, 'status': 1}",
+    unique = true,
+    partialFilter = "{ 'status': 'SUCCESS' }"
+)
 @Document(collection = "payments")
 @AllArgsConstructor
 @NoArgsConstructor

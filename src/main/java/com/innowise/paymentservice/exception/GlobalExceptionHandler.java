@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+import com.innowise.paymentservice.exception.conflict.PaymentAlreadyProcessedException;
 import com.innowise.paymentservice.exception.conflict.RequestAlreadyProcessingException;
 import com.innowise.paymentservice.exception.external.PaymentProviderUnavailableException;
 import com.innowise.paymentservice.exception.notfound.ResourceNotFoundException;
@@ -111,6 +112,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ProblemDetail> handleRequestAlreadyProcessing(RequestAlreadyProcessingException ex) {
         HttpStatus status = HttpStatus.CONFLICT;
         return toResponse(status, build(status, "Request already processing", ex.getMessage()));
+    }
+
+    @ExceptionHandler(PaymentAlreadyProcessedException.class)
+    public ResponseEntity<ProblemDetail> handlePaymentAlreadyProcessed(PaymentAlreadyProcessedException ex) {
+        HttpStatus status = HttpStatus.CONFLICT;
+        return toResponse(status, build(status, "Payment already paid", ex.getMessage()));
     }
 
     @ExceptionHandler(PaymentProviderUnavailableException.class)

@@ -25,5 +25,7 @@ public interface PaymentMapper {
     @Mapping(target = "orderId", source = "orderId")
     @Mapping(target = "userId", source = "userId")
     @Mapping(target = "status", source = "status")
+    @Mapping(target = "paymentAmount", source = "paymentAmount")
+    @Mapping(target = "createdAt", source = "createdAt")
     PaymentCreatedEvent toPaymentCreatedEvent(Payment payment);
 }
