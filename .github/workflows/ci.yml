@@ -69,13 +69,6 @@ jobs:
             -Dsonar.host.url="$SONAR_URL" \
             -Dsonar.verbose=true
 
-      - name: Upload JAR artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-jar
-          path: target/*.jar
-          retention-days: 1
-
   docker:
     name: Build & Push Docker image to Docker Hub
     if: |
