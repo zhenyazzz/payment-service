@@ -17,14 +17,36 @@ spring:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
       properties:
-        enable.idempotence: false
+        enable.idempotence: true
         delivery.timeout.ms: 120000
         spring.json.add.type.headers: false
 
 resilience4j:
+  circuitbreaker:
+    instances:
+      orderService:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        permittedNumberOfCallsInHalfOpenState: 3
+        slidingWindowType: COUNT_BASED
+        minimumNumberOfCalls: 5
+        waitDurationInOpenState: 5s
+        failureRateThreshold: 50
+        ignoreExceptions:
+          - org.springframework.web.reactive.function.client.WebClientResponseException.NotFound
+          - org.springframework.web.reactive.function.client.WebClientResponseException.BadRequest
+        recordExceptions:
+          - org.springframework.web.reactive.function.client.WebClientResponseException.InternalServerError
+          - org.springframework.web.reactive.function.client.WebClientResponseException.BadGateway
+          - org.springframework.web.reactive.function.client.WebClientResponseException.ServiceUnavailable
+          - org.springframework.web.reactive.function.client.WebClientResponseException.GatewayTimeout
+          - org.springframework.web.reactive.function.client.WebClientRequestException
+          - java.util.concurrent.TimeoutException
+          - io.netty.handler.timeout.ReadTimeoutException
+
   retry:
     instances:
-      randomOrgAcquiring: &default-retry
+      randomOrgAcquiring:
         maxAttempts: 3
         waitDuration: 1s
         enableExponentialBackoff: true
@@ -40,7 +62,23 @@ resilience4j:
         ignoreExceptions:
           - org.springframework.web.reactive.function.client.WebClientResponseException.NotFound
           - org.springframework.web.reactive.function.client.WebClientResponseException.BadRequest
-
+      orderService:
+        maxAttempts: 3
+        waitDuration: 1s
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+        retryExceptions:
+          - org.springframework.web.reactive.function.client.WebClientResponseException.InternalServerError
+          - org.springframework.web.reactive.function.client.WebClientResponseException.BadGateway
+          - org.springframework.web.reactive.function.client.WebClientResponseException.ServiceUnavailable
+          - org.springframework.web.reactive.function.client.WebClientResponseException.GatewayTimeout
+          - org.springframework.web.reactive.function.client.WebClientRequestException
+          - java.util.concurrent.TimeoutException
+          - io.netty.handler.timeout.ReadTimeoutException
+        ignoreExceptions:
+          - org.springframework.web.reactive.function.client.WebClientResponseException.NotFound
+          - org.springframework.web.reactive.function.client.WebClientResponseException.BadRequest
+      
 kafka:
   topic:
     name: ${KAFKA_TOPIC_NAME:payment-events}

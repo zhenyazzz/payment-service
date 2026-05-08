@@ -96,7 +96,7 @@ services:
       KAFKA_PROCESS_ROLES: broker,controller
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:29093
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_LISTENERS: CONTROLLER://:29093,PLAINTEXT_HOST://:9092,PLAINTEXT://:19092
+      KAFKA_LISTENERS: CONTROLLER://:29093,PLAINTEXT_HOST://:9092,PLAINTEXT://:29092
       KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT_HOST://localhost:${KAFKA_PORT:-9092},PLAINTEXT://kafka:29092"
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
@@ -128,6 +128,10 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${USER_SPRING_DATASOURCE_PASSWORD:-user_service_secret}
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: "6379"
+      SPRING_APPLICATION_NAME: "user-service"
+      MANAGEMENT_OTLP_TRACING_ENDPOINT: "http://otel-collector:4318/v1/traces"
+      MANAGEMENT_OTLP_METRICS_EXPORT_URL: "http://otel-collector:4318/v1/metrics"
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
       interval: 10s
@@ -154,6 +158,10 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${AUTH_SPRING_DATASOURCE_PASSWORD:-auth_service_secret}
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: "6379"
+      SPRING_APPLICATION_NAME: "auth-service"
+      MANAGEMENT_OTLP_TRACING_ENDPOINT: "http://otel-collector:4318/v1/traces"
+      MANAGEMENT_OTLP_METRICS_EXPORT_URL: "http://otel-collector:4318/v1/metrics"
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
       JWT_SECRET: ${JWT_SECRET:-Y2hhbmdlLW1lLWluLXByb2R1Y3Rpb24tdGhpcy1pcy1hLTI1Ni1iaXQtc2VjcmV0LWtleS1mb3ItZGV2LW9ubHktY2hhbmdlLWl0}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
@@ -181,6 +189,10 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${ORDER_SPRING_DATASOURCE_PASSWORD:-order_service_secret}
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: "6379"
+      SPRING_APPLICATION_NAME: "order-service"
+      MANAGEMENT_OTLP_TRACING_ENDPOINT: "http://otel-collector:4318/v1/traces"
+      MANAGEMENT_OTLP_METRICS_EXPORT_URL: "http://otel-collector:4318/v1/metrics"
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
       USER_SERVICE_URL: ${ORDER_USER_SERVICE_URL:-http://user-service:8081}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
@@ -209,6 +221,10 @@ services:
       SPRING_DATA_REDIS_PORT: "6379"
       SPRING_DATA_MONGODB_URI: ${SPRING_DATA_MONGODB_URI:-mongodb://mongodb:27017/payment_service?replicaSet=rs0}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:-kafka:29092}
+      SPRING_APPLICATION_NAME: "payment-service"
+      MANAGEMENT_OTLP_TRACING_ENDPOINT: "http://otel-collector:4318/v1/traces"
+      MANAGEMENT_OTLP_METRICS_EXPORT_URL: "http://otel-collector:4318/v1/metrics"
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8084/actuator/health"]
       interval: 10s
@@ -231,8 +247,13 @@ services:
     ports:
       - "${GATEWAY_PORT:-8080}:8080"
     environment:
+      SPRING_PROFILES_ACTIVE: docker
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: "6379"
+      SPRING_APPLICATION_NAME: "gateway-service"
+      MANAGEMENT_OTLP_TRACING_ENDPOINT: "http://otel-collector:4318/v1/traces"
+      MANAGEMENT_OTLP_METRICS_EXPORT_URL: "http://otel-collector:4318/v1/metrics"
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
       AUTH_SERVICE_URL: ${AUTH_SERVICE_URL:-http://auth-service:8082}
       USER_SERVICE_URL: ${USER_SERVICE_URL:-http://user-service:8081}
       ORDER_SERVICE_URL: ${ORDER_SERVICE_URL:-http://order-service:8083}
@@ -258,12 +279,90 @@ services:
     networks:
       - backend-net
 
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.100.0
+    container_name: otel-collector
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./configs/otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
+    ports:
+      - "4317:4317" # OTLP gRPC
+      - "4318:4318" # OTLP HTTP
+    networks:
+      - backend-net
+
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    container_name: prometheus
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--enable-feature=otlp-write-receiver"]
+    volumes:
+      - ./configs/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - backend-net
+
+  tempo:
+    image: grafana/tempo:2.5.0
+    container_name: tempo
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - ./configs/tempo.yaml:/etc/tempo.yaml:ro
+      - tempo-data:/var/tempo
+    networks:
+      - backend-net
+
+  loki:
+    image: grafana/loki:3.0.0
+    container_name: loki
+    command: ["-config.file=/etc/loki/local-config.yaml"]
+    ports:
+      - "3100:3100"
+    networks:
+      - backend-net
+
+  promtail:
+    image: grafana/promtail:3.0.0
+    container_name: promtail
+    command: ["-config.file=/etc/promtail/config.yml"]
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro 
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro 
+      - ./configs/promtail.yml:/etc/promtail/config.yml:ro
+    networks:
+      - backend-net
+    depends_on:
+      - loki
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    container_name: grafana
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./configs/grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+    networks:
+      - backend-net
+
 volumes:
   redis-data:
   auth-service-db-data:
   order-service-db-data:
   user-service-db-data:
   mongo-data:
+  prometheus-data:
+  tempo-data:
+  grafana-data:
 
 networks:
   backend-net:
