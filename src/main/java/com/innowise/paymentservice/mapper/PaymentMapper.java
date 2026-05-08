@@ -7,7 +7,7 @@ import com.innowise.paymentservice.model.Payment;
 
 import com.innowise.paymentservice.dto.request.CreatePaymentRequest;
 import com.innowise.paymentservice.dto.response.PaymentResponse;
-import com.innowise.paymentservice.producer.PaymentCreatedEvent;
+import com.innowise.paymentservice.producer.CreatePaymentEvent;
 
 @Mapper(componentModel = "spring")
 public interface PaymentMapper {
@@ -27,5 +27,5 @@ public interface PaymentMapper {
     @Mapping(target = "status", source = "status")
     @Mapping(target = "paymentAmount", source = "paymentAmount")
     @Mapping(target = "createdAt", source = "createdAt")
-    PaymentCreatedEvent toPaymentCreatedEvent(Payment payment);
+    CreatePaymentEvent toCreatePaymentEvent(Payment payment);
 }

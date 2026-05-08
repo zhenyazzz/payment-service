@@ -5,7 +5,7 @@ import java.time.Instant;
 
 import com.innowise.paymentservice.model.enums.PaymentStatus;
 
-public record PaymentCreatedEvent(
+public record CreatePaymentEvent(
     String paymentId,
     String orderId,
     String userId,

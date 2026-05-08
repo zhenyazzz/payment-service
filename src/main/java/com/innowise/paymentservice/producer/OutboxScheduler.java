@@ -3,7 +3,9 @@ package com.innowise.paymentservice.producer;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.nio.charset.StandardCharsets;
 
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -22,6 +24,8 @@ import lombok.extern.slf4j.Slf4j;
 public class OutboxScheduler {
 
     private static final int OUTBOX_FETCH_BATCH_SIZE = 100;
+    private static final String EVENT_TYPE_HEADER = "event_type";
+    private static final String EVENT_ID_HEADER = "event_id";
 
     private final OutboxEventRepository outboxEventRepository;
     private final KafkaTemplate<String, String> kafkaTemplate;
@@ -45,7 +49,7 @@ public class OutboxScheduler {
 
         List<CompletableFuture<String>> futures = events.stream()
             .map(event -> kafkaTemplate
-                .send(topicName, event.getAggregateId(), event.getPayload())
+                .send(toProducerRecord(event))
                 .thenApply(result -> event.getId())
                 .exceptionally(ex -> {
                     log.error("Failed to send event to Kafka", ex);
@@ -64,5 +68,16 @@ public class OutboxScheduler {
             outboxEventRepository.markAsProcessed(successfulEventIds);
             log.info("Marked {} events as processed", successfulEventIds.size());
         }
+    }
+
+    private ProducerRecord<String, String> toProducerRecord(OutboxEvent event) {
+        ProducerRecord<String, String> record = new ProducerRecord<>(
+            topicName,
+            event.getAggregateId(),
+            event.getPayload()
+        );
+        record.headers().add(EVENT_TYPE_HEADER, event.getEventType().getBytes(StandardCharsets.UTF_8));
+        record.headers().add(EVENT_ID_HEADER, event.getId().getBytes(StandardCharsets.UTF_8));
+        return record;
     }
 }

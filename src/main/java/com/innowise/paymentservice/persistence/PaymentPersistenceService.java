@@ -7,7 +7,7 @@ import com.innowise.paymentservice.mapper.PaymentMapper;
 import com.innowise.paymentservice.model.OutboxEvent;
 import com.innowise.paymentservice.model.Payment;
 import com.innowise.paymentservice.model.enums.PaymentStatus;
-import com.innowise.paymentservice.producer.PaymentCreatedEvent;
+import com.innowise.paymentservice.producer.CreatePaymentEvent;
 import com.innowise.paymentservice.repository.OutboxEventRepository;
 import com.innowise.paymentservice.repository.PaymentRepository;
 
@@ -34,12 +34,12 @@ public class PaymentPersistenceService {
         payment.setStatus(finalStatus);
         paymentRepository.save(payment);
 
-        PaymentCreatedEvent paymentCreatedEvent = paymentMapper.toPaymentCreatedEvent(payment);
+        CreatePaymentEvent createPaymentEvent = paymentMapper.toCreatePaymentEvent(payment);
 
         OutboxEvent outboxEvent = OutboxEvent.builder()
             .aggregateId(payment.getOrderId())
             .eventType("CREATE_PAYMENT")
-            .payload(objectMapper.writeValueAsString(paymentCreatedEvent))
+            .payload(objectMapper.writeValueAsString(createPaymentEvent))
             .build();
             
         outboxEventRepository.save(outboxEvent);

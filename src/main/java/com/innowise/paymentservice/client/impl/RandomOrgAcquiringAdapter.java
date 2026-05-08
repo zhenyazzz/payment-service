@@ -12,6 +12,12 @@ import lombok.RequiredArgsConstructor;
 import io.github.resilience4j.retry.annotation.Retry;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Acquiring client adapter based on random.org integer API.
+ *
+ * <p>Generates a pseudo-acquiring response code from external random value and relies on
+ * resilience4j retry policy for transient network faults.</p>
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -20,6 +26,11 @@ public class RandomOrgAcquiringAdapter implements PaymentAcquiringClient {
     @Qualifier("randomOrgWebClient")
     private final WebClient randomOrgWebClient;
 
+    /**
+     * Requests an integer from random.org and maps it to acquiring result.
+     *
+     * @return acquiring result with response code
+     */
     @Override
     @Retry(name = "randomOrgAcquiring", fallbackMethod = "fallbackTransaction")
     public AcquiringResult getAcquiringResult() {
@@ -48,6 +59,13 @@ public class RandomOrgAcquiringAdapter implements PaymentAcquiringClient {
         return new AcquiringResult(resultNumber);
     }
 
+    /**
+     * Fallback handler after retry exhaustion.
+     *
+     * @param e failure that caused fallback execution
+     * @return never returns normally
+     * @throws RandomOrgUnavailableException always thrown to mark acquiring unavailability
+     */
     public AcquiringResult fallbackTransaction(Exception e) {
         log.error("Payment gateway is unavailable after all attempts! Reason: {}", e.getMessage());
         throw new RandomOrgUnavailableException("Failed to connect to Random.org", e);

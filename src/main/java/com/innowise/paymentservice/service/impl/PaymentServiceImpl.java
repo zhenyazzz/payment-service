@@ -10,6 +10,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import com.innowise.paymentservice.client.AcquiringResult;
+import com.innowise.paymentservice.client.OrderClient;
 import com.innowise.paymentservice.client.PaymentAcquiringClient;
 import com.innowise.paymentservice.dto.request.AdvancedPaymentSearchFilter;
 import com.innowise.paymentservice.dto.request.CreatePaymentRequest;
@@ -29,17 +30,35 @@ import com.innowise.paymentservice.service.PaymentService;
 
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Default implementation of payment business operations.
+ *
+ * <p>Handles payment creation, access checks, filtered search, and summary calculations.
+ * Coordinates persistence and acquiring calls while preserving idempotent behavior for
+ * already paid orders.</p>
+ */
 @Service
 @RequiredArgsConstructor
 public class PaymentServiceImpl implements PaymentService {
     private final PaymentRepository paymentRepository;
     private final PaymentMapper paymentMapper;
+    private final OrderClient orderClient;
     private final PaymentAcquiringClient paymentAcquiringClient;
     private final PaymentPersistenceService paymentPersistenceService;
 
+    /**
+     * Creates a payment for a user and finalizes it based on acquiring response.
+     *
+     * @param currentUserId current authenticated user identifier
+     * @param createPaymentRequest incoming payment creation request
+     * @return finalized payment response
+     */
     @Override
     public PaymentResponse createPayment(String currentUserId, CreatePaymentRequest createPaymentRequest) {
         Payment payment = paymentMapper.toEntity(createPaymentRequest, currentUserId);
+        payment.setPaymentAmount(
+            orderClient.getOrderTotalPrice(createPaymentRequest.orderId(), currentUserId)
+        );
 
         if (paymentRepository.existsByOrderIdAndStatus(payment.getOrderId(), PaymentStatus.SUCCESS)) {
             throw new PaymentAlreadyProcessedException("Order already paid: " + payment.getOrderId());
@@ -63,6 +82,13 @@ public class PaymentServiceImpl implements PaymentService {
         }
     }
 
+    /**
+     * Returns payment by identifier with ownership/admin access validation.
+     *
+     * @param paymentId payment identifier
+     * @param currentUserId current authenticated user identifier
+     * @return payment response
+     */
     @Override
     public PaymentResponse getPaymentById(String paymentId, String currentUserId) {
         Payment payment = paymentRepository.findById(paymentId)
@@ -75,6 +101,14 @@ public class PaymentServiceImpl implements PaymentService {
         return paymentMapper.toResponse(payment);
     }
 
+    /**
+     * Returns paged payment list using basic filter criteria.
+     *
+     * @param paymentSearchFilter basic search filter
+     * @param pageable pagination configuration
+     * @param currentUserId current authenticated user identifier
+     * @return page of payments mapped to response DTO
+     */
     @Override
     public Page<PaymentResponse> getPayments(
         PaymentSearchFilter paymentSearchFilter,
@@ -92,6 +126,14 @@ public class PaymentServiceImpl implements PaymentService {
         return paymentRepository.findPaymentsByCriteria(criteria, pageable).map(paymentMapper::toResponse);
     }
 
+    /**
+     * Returns paged payment list using advanced filter criteria.
+     *
+     * @param advancedPaymentSearchFilter advanced search filter
+     * @param pageable pagination configuration
+     * @param currentUserId current authenticated user identifier
+     * @return page of payments mapped to response DTO
+     */
     @Override
     public Page<PaymentResponse> getAdvancedPayments(
         AdvancedPaymentSearchFilter advancedPaymentSearchFilter,
@@ -111,11 +153,26 @@ public class PaymentServiceImpl implements PaymentService {
         return paymentRepository.searchPaymentsByCriteria(criteria, pageable).map(paymentMapper::toResponse);
     }
 
+    /**
+     * Calculates total successful payment amount for one user in the provided interval.
+     *
+     * @param currentUserId current authenticated user identifier
+     * @param from interval start (inclusive)
+     * @param to interval end (inclusive)
+     * @return aggregated amount
+     */
     @Override
     public BigDecimal getTotalPaymentAmountByUserIdAndDateRange(String currentUserId, Instant from, Instant to) {
         return paymentRepository.sumByUserIdDateRange(currentUserId, from, to);
     }
 
+    /**
+     * Calculates total successful payment amount for all users in the provided interval.
+     *
+     * @param from interval start (inclusive)
+     * @param to interval end (inclusive)
+     * @return aggregated amount
+     */
     @Override
     public BigDecimal getTotalPaymentAmountByDateRange(Instant from, Instant to) {
         return paymentRepository.sumAllPaymentsDateRange(from, to);

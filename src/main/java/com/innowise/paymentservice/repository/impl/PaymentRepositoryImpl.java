@@ -22,6 +22,11 @@ import com.innowise.paymentservice.repository.criteria.AdvancedPaymentSearchCrit
 
 import lombok.RequiredArgsConstructor;
 
+/**
+ * MongoDB implementation of custom payment repository operations.
+ *
+ * <p>Provides aggregate calculations and dynamic filtering with pageable results.</p>
+ */
 @Repository
 @RequiredArgsConstructor
 public class PaymentRepositoryImpl implements PaymentRepositoryCustom {
@@ -35,6 +40,14 @@ public class PaymentRepositoryImpl implements PaymentRepositoryCustom {
 
     private final MongoTemplate mongoTemplate;
 
+    /**
+     * Calculates successful payment amount for a user within time range.
+     *
+     * @param userId user identifier
+     * @param from range start (inclusive)
+     * @param to range end (inclusive)
+     * @return aggregated amount
+     */
     @Override
     public BigDecimal sumByUserIdDateRange(String userId, Instant from, Instant to) {
         Criteria criteria = Criteria.where(FIELD_USER_ID).is(userId)
@@ -46,6 +59,13 @@ public class PaymentRepositoryImpl implements PaymentRepositoryCustom {
         return extractResult(aggregation);
     }
 
+    /**
+     * Calculates successful payment amount for all users within time range.
+     *
+     * @param from range start (inclusive)
+     * @param to range end (inclusive)
+     * @return aggregated amount
+     */
     @Override
     public BigDecimal sumAllPaymentsDateRange(Instant from, Instant to) {
         Criteria criteria = Criteria.where(FIELD_CREATED_AT).gte(from).lte(to)
@@ -75,6 +95,13 @@ public class PaymentRepositoryImpl implements PaymentRepositoryCustom {
             : BigDecimal.ZERO;
     }
 
+    /**
+     * Finds payments by basic criteria and returns paginated result.
+     *
+     * @param criteria basic search criteria
+     * @param pageable pagination configuration
+     * @return page of matching payments
+     */
     @Override
     public Page<Payment> findPaymentsByCriteria(PaymentSearchCriteria criteria, Pageable pageable) {
         Query query = new Query();
@@ -92,6 +119,13 @@ public class PaymentRepositoryImpl implements PaymentRepositoryCustom {
         return getPaginatedResult(query, pageable);
     }
 
+    /**
+     * Finds payments by advanced criteria and returns paginated result.
+     *
+     * @param criteria advanced search criteria
+     * @param pageable pagination configuration
+     * @return page of matching payments
+     */
     @Override
     public Page<Payment> searchPaymentsByCriteria(AdvancedPaymentSearchCriteria criteria, Pageable pageable) {
         Query query = new Query();
