@@ -22,7 +22,7 @@ import com.innowise.paymentservice.model.OutboxEvent;
 import com.innowise.paymentservice.model.Payment;
 import com.innowise.paymentservice.model.enums.PaymentStatus;
 import com.innowise.paymentservice.persistence.PaymentPersistenceService;
-import com.innowise.paymentservice.producer.PaymentCreatedEvent;
+import com.innowise.paymentservice.producer.CreatePaymentEvent;
 import com.innowise.paymentservice.repository.OutboxEventRepository;
 import com.innowise.paymentservice.repository.PaymentRepository;
 import com.innowise.paymentservice.utils.PaymentTestDataFactory;
@@ -88,11 +88,11 @@ class PaymentPersistenceServiceTest {
         @DisplayName("creates outbox event on SUCCESS")
         void whenFinalizePayment_success_createsOutboxEvent() throws Exception {
             Payment payment = PaymentTestDataFactory.buildPayment();
-            PaymentCreatedEvent createdEvent = PaymentTestDataFactory.buildPaymentCreatedEvent();
+            CreatePaymentEvent createdEvent = PaymentTestDataFactory.buildPaymentCreatedEvent();
             String jsonPayload = "{\"status\":\"SUCCESS\"}";
 
             when(paymentRepository.save(payment)).thenReturn(payment);
-            when(paymentMapper.toPaymentCreatedEvent(payment)).thenReturn(createdEvent);
+            when(paymentMapper.toCreatePaymentEvent(payment)).thenReturn(createdEvent);
             when(objectMapper.writeValueAsString(createdEvent)).thenReturn(jsonPayload);
 
             Payment result = paymentPersistenceService.finalizePaymentAndCreateOutboxEvent(
@@ -114,11 +114,11 @@ class PaymentPersistenceServiceTest {
         @DisplayName("creates outbox event on FAILED")
         void whenFinalizePayment_failed_createsOutboxEvent() throws Exception {
             Payment payment = PaymentTestDataFactory.buildPayment();
-            PaymentCreatedEvent createdEvent = PaymentTestDataFactory.buildPaymentCreatedEvent(PaymentStatus.FAILED);
+            CreatePaymentEvent createdEvent = PaymentTestDataFactory.buildPaymentCreatedEvent(PaymentStatus.FAILED);
             String jsonPayload = "{\"status\":\"FAILED\"}";
 
             when(paymentRepository.save(payment)).thenReturn(payment);
-            when(paymentMapper.toPaymentCreatedEvent(payment)).thenReturn(createdEvent);
+            when(paymentMapper.toCreatePaymentEvent(payment)).thenReturn(createdEvent);
             when(objectMapper.writeValueAsString(createdEvent)).thenReturn(jsonPayload);
 
             paymentPersistenceService.finalizePaymentAndCreateOutboxEvent(payment, PaymentStatus.FAILED);
@@ -131,10 +131,10 @@ class PaymentPersistenceServiceTest {
         @DisplayName("does not create outbox event if JSON serialization fails")
         void whenObjectMapperThrows_doesNotCreateOutbox() throws Exception {
             Payment payment = PaymentTestDataFactory.buildPayment();
-            PaymentCreatedEvent createdEvent = PaymentTestDataFactory.buildPaymentCreatedEvent();
+            CreatePaymentEvent createdEvent = PaymentTestDataFactory.buildPaymentCreatedEvent();
 
             when(paymentRepository.save(payment)).thenReturn(payment);
-            when(paymentMapper.toPaymentCreatedEvent(payment)).thenReturn(createdEvent);
+            when(paymentMapper.toCreatePaymentEvent(payment)).thenReturn(createdEvent);
             when(objectMapper.writeValueAsString(createdEvent)).thenThrow(new RuntimeException("json error"));
 
             assertThatThrownBy(() ->
@@ -149,10 +149,10 @@ class PaymentPersistenceServiceTest {
         @DisplayName("propagates exception if outbox save fails")
         void whenOutboxSaveThrows_propagatesException() throws Exception {
             Payment payment = PaymentTestDataFactory.buildPayment();
-            PaymentCreatedEvent createdEvent = PaymentTestDataFactory.buildPaymentCreatedEvent();
+            CreatePaymentEvent createdEvent = PaymentTestDataFactory.buildPaymentCreatedEvent();
 
             when(paymentRepository.save(payment)).thenReturn(payment);
-            when(paymentMapper.toPaymentCreatedEvent(payment)).thenReturn(createdEvent);
+            when(paymentMapper.toCreatePaymentEvent(payment)).thenReturn(createdEvent);
             when(objectMapper.writeValueAsString(createdEvent)).thenReturn("{}");
 
             RuntimeException dbException = new RuntimeException("Outbox DB is down");

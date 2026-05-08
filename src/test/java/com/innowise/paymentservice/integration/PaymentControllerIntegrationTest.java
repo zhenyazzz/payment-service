@@ -97,6 +97,7 @@ class PaymentControllerIntegrationTest extends AbstractIntegrationTest {
             stubRandomOrgResponse(2);
 
             CreatePaymentRequest request = PaymentTestDataFactory.buildCreatePaymentRequest();
+            stubOrderTotalPrice(request.orderId(), USER_A.toString(), request.paymentAmount());
 
             PaymentResponse response = webTestClient
                 .post()
@@ -141,6 +142,7 @@ class PaymentControllerIntegrationTest extends AbstractIntegrationTest {
             stubRandomOrgResponse(2);
 
             CreatePaymentRequest request = PaymentTestDataFactory.buildCreatePaymentRequest();
+            stubOrderTotalPrice(request.orderId(), USER_A.toString(), request.paymentAmount());
 
             PaymentResponse first = webTestClient
                 .post()

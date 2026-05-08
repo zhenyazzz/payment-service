@@ -26,6 +26,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 
 import com.innowise.paymentservice.client.AcquiringResult;
+import com.innowise.paymentservice.client.OrderClient;
 import com.innowise.paymentservice.client.PaymentAcquiringClient;
 import com.innowise.paymentservice.dto.request.AdvancedPaymentSearchFilter;
 import com.innowise.paymentservice.dto.request.CreatePaymentRequest;
@@ -57,6 +58,9 @@ class PaymentServiceImplTest {
     private PaymentMapper paymentMapper;
 
     @Mock
+    private OrderClient orderClient;
+
+    @Mock
     private PaymentAcquiringClient paymentAcquiringClient;
 
     @Mock
@@ -79,6 +83,8 @@ class PaymentServiceImplTest {
             PaymentResponse response = PaymentTestDataFactory.buildPaymentResponse(finalizedPayment);
 
             when(paymentMapper.toEntity(request, PaymentTestDataFactory.USER_ID)).thenReturn(mappedPayment);
+            when(orderClient.getOrderTotalPrice(request.orderId(), PaymentTestDataFactory.USER_ID))
+                .thenReturn(mappedPayment.getPaymentAmount());
             when(paymentRepository.existsByOrderIdAndStatus(mappedPayment.getOrderId(), PaymentStatus.SUCCESS)).thenReturn(false);
             when(paymentPersistenceService.savePendingPayment(mappedPayment)).thenReturn(savedPayment);
             when(paymentAcquiringClient.getAcquiringResult()).thenReturn(new AcquiringResult(2));
@@ -90,6 +96,7 @@ class PaymentServiceImplTest {
 
             assertThat(result).isEqualTo(response);
             verify(paymentMapper).toEntity(request, PaymentTestDataFactory.USER_ID);
+            verify(orderClient).getOrderTotalPrice(request.orderId(), PaymentTestDataFactory.USER_ID);
             verify(paymentPersistenceService).savePendingPayment(mappedPayment);
             verify(paymentAcquiringClient).getAcquiringResult();
             verify(paymentPersistenceService)
@@ -107,6 +114,8 @@ class PaymentServiceImplTest {
             PaymentResponse response = PaymentTestDataFactory.buildPaymentResponse(finalizedPayment);
 
             when(paymentMapper.toEntity(request, PaymentTestDataFactory.USER_ID)).thenReturn(mappedPayment);
+            when(orderClient.getOrderTotalPrice(request.orderId(), PaymentTestDataFactory.USER_ID))
+                .thenReturn(mappedPayment.getPaymentAmount());
             when(paymentRepository.existsByOrderIdAndStatus(mappedPayment.getOrderId(), PaymentStatus.SUCCESS)).thenReturn(false);
             when(paymentPersistenceService.savePendingPayment(mappedPayment)).thenReturn(savedPayment);
             when(paymentAcquiringClient.getAcquiringResult()).thenReturn(new AcquiringResult(3));
@@ -128,6 +137,8 @@ class PaymentServiceImplTest {
             Payment savedPayment = PaymentTestDataFactory.buildPayment(PaymentStatus.PENDING);
 
             when(paymentMapper.toEntity(request, PaymentTestDataFactory.USER_ID)).thenReturn(mappedPayment);
+            when(orderClient.getOrderTotalPrice(request.orderId(), PaymentTestDataFactory.USER_ID))
+                .thenReturn(mappedPayment.getPaymentAmount());
             when(paymentRepository.existsByOrderIdAndStatus(mappedPayment.getOrderId(), PaymentStatus.SUCCESS)).thenReturn(false);
             when(paymentPersistenceService.savePendingPayment(mappedPayment)).thenReturn(savedPayment);
             when(paymentAcquiringClient.getAcquiringResult()).thenThrow(new RuntimeException("gateway down"));
@@ -145,6 +156,8 @@ class PaymentServiceImplTest {
             Payment savedPayment = PaymentTestDataFactory.buildPayment(PaymentStatus.PENDING);
 
             when(paymentMapper.toEntity(request, PaymentTestDataFactory.USER_ID)).thenReturn(mappedPayment);
+            when(orderClient.getOrderTotalPrice(request.orderId(), PaymentTestDataFactory.USER_ID))
+                .thenReturn(mappedPayment.getPaymentAmount());
             when(paymentRepository.existsByOrderIdAndStatus(mappedPayment.getOrderId(), PaymentStatus.SUCCESS)).thenReturn(false);
             when(paymentPersistenceService.savePendingPayment(mappedPayment)).thenReturn(savedPayment);
             when(paymentAcquiringClient.getAcquiringResult()).thenReturn(new AcquiringResult(2));

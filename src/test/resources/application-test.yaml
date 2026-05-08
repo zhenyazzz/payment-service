@@ -21,6 +21,8 @@ kafka:
     name: test-payment-events
 
 external:
+  order-service:
+    url: http://localhost:8083
   random-api:
     url: https://www.random.org
 

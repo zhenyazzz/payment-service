@@ -10,7 +10,7 @@ import com.innowise.paymentservice.dto.request.PaymentSearchFilter;
 import com.innowise.paymentservice.model.Payment;
 import com.innowise.paymentservice.model.enums.PaymentStatus;
 import com.innowise.paymentservice.dto.response.PaymentResponse;
-import com.innowise.paymentservice.producer.PaymentCreatedEvent;
+import com.innowise.paymentservice.producer.CreatePaymentEvent;
 
 import lombok.experimental.UtilityClass;
 
@@ -67,15 +67,15 @@ public class PaymentTestDataFactory {
         return p;
     }
 
-    public PaymentCreatedEvent buildPaymentCreatedEvent() {
+    public CreatePaymentEvent buildPaymentCreatedEvent() {
         return buildPaymentCreatedEvent(PaymentStatus.SUCCESS);
     }
 
-    public PaymentCreatedEvent buildPaymentCreatedEvent(PaymentStatus status) {
+    public CreatePaymentEvent buildPaymentCreatedEvent(PaymentStatus status) {
         return buildPaymentCreatedEvent(PAYMENT_ID, ORDER_ID, USER_ID, PAYMENT_AMOUNT, status, FIXED_INSTANT);
     }
 
-    public PaymentCreatedEvent buildPaymentCreatedEvent(
+    public CreatePaymentEvent buildPaymentCreatedEvent(
         String paymentId,
         String orderId,
         String userId,
@@ -83,7 +83,7 @@ public class PaymentTestDataFactory {
         PaymentStatus status,
         Instant createdAt
     ) {
-        return new PaymentCreatedEvent(paymentId, orderId, userId, paymentAmount, status, createdAt);
+        return new CreatePaymentEvent(paymentId, orderId, userId, paymentAmount, status, createdAt);
     }
 
     public CreatePaymentRequest buildCreatePaymentRequest() {

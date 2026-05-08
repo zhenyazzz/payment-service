@@ -4,10 +4,12 @@ import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.ok;
+import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 
 import org.apache.kafka.clients.admin.NewTopic;
+import java.math.BigDecimal;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -76,6 +78,7 @@ public abstract class AbstractIntegrationTest {
         registry.add("spring.data.redis.host", redis::getHost);
         registry.add("spring.data.redis.port", () -> String.valueOf(redis.getMappedPort(6379)));
         registry.add("external.random-api.url", wireMock::baseUrl);
+        registry.add("external.order-service.url", wireMock::baseUrl);
     }
 
     protected void stubRandomOrgResponse(int responseCode) {
@@ -92,6 +95,12 @@ public abstract class AbstractIntegrationTest {
     protected void verifyRandomOrgCalledTimes(int times) {
         wireMock.verify(times, getRequestedFor(urlPathEqualTo("/integers/"))
             .withQueryParam("num", equalTo("1")));
+    }
+
+    protected void stubOrderTotalPrice(String orderId, String userId, BigDecimal totalPrice) {
+        wireMock.stubFor(get(urlPathEqualTo("/orders/internal/" + orderId + "/total-price"))
+            .withHeader("X-User-Id", equalTo(userId))
+            .willReturn(okJson("{\"totalPrice\":" + totalPrice.toPlainString() + "}")));
     }
 
     @TestConfiguration(proxyBeanMethods = false)

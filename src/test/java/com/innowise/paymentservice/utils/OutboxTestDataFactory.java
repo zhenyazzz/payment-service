@@ -31,6 +31,7 @@ public class OutboxTestDataFactory {
         return OutboxEvent.builder()
             .id(eventId)
             .aggregateId(orderId)
+            .eventType("CREATE_PAYMENT")
             .payload(payload)
             .processed(false)
             .build();
