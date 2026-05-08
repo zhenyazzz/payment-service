@@ -87,7 +87,7 @@ public class PaymentTestDataFactory {
     }
 
     public CreatePaymentRequest buildCreatePaymentRequest() {
-        return new CreatePaymentRequest(ORDER_ID, PAYMENT_AMOUNT);
+        return new CreatePaymentRequest(ORDER_ID);
     }
 
     public PaymentSearchFilter buildPaymentSearchFilter() {

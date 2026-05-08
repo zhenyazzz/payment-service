@@ -97,7 +97,8 @@ class PaymentControllerIntegrationTest extends AbstractIntegrationTest {
             stubRandomOrgResponse(2);
 
             CreatePaymentRequest request = PaymentTestDataFactory.buildCreatePaymentRequest();
-            stubOrderTotalPrice(request.orderId(), USER_A.toString(), request.paymentAmount());
+            BigDecimal orderTotal = new BigDecimal("10.00");
+            stubOrderTotalPrice(request.orderId(), USER_A.toString(), orderTotal);
 
             PaymentResponse response = webTestClient
                 .post()
@@ -119,7 +120,7 @@ class PaymentControllerIntegrationTest extends AbstractIntegrationTest {
             assertThat(response.orderId()).isEqualTo(request.orderId());
             assertThat(response.userId()).isEqualTo(USER_A.toString());
             assertThat(response.status()).isEqualTo(PaymentStatus.SUCCESS);
-            assertThat(response.paymentAmount()).isEqualByComparingTo(request.paymentAmount());
+            assertThat(response.paymentAmount()).isEqualByComparingTo(orderTotal);
 
             Payment storedPayment = paymentRepository.findById(response.id()).orElseThrow();
             assertThat(storedPayment.getStatus()).isEqualTo(PaymentStatus.SUCCESS);
@@ -142,7 +143,7 @@ class PaymentControllerIntegrationTest extends AbstractIntegrationTest {
             stubRandomOrgResponse(2);
 
             CreatePaymentRequest request = PaymentTestDataFactory.buildCreatePaymentRequest();
-            stubOrderTotalPrice(request.orderId(), USER_A.toString(), request.paymentAmount());
+            stubOrderTotalPrice(request.orderId(), USER_A.toString(), new BigDecimal("10.00"));
 
             PaymentResponse first = webTestClient
                 .post()
