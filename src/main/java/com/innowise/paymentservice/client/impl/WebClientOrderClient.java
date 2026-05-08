@@ -15,6 +15,12 @@ import lombok.RequiredArgsConstructor;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 
+/**
+ * WebClient-based implementation of {@link com.innowise.paymentservice.client.OrderClient}.
+ *
+ * <p>This client calls the internal order endpoint to resolve the current order total price
+ * before the payment workflow proceeds to acquiring and persistence.</p>
+ */
 @Component
 @RequiredArgsConstructor
 public class WebClientOrderClient implements OrderClient {
@@ -22,6 +28,18 @@ public class WebClientOrderClient implements OrderClient {
     @Qualifier("orderServiceWebClient")
     private final WebClient orderServiceWebClient;
 
+    /**
+     * Fetches the total order price from the order service.
+     *
+     * <p>The caller identity is forwarded as {@code X-User-Id} because the internal
+     * order-price endpoint validates access using the upstream-authenticated user context.</p>
+     *
+     * @param orderId order identifier
+     * @param userId current authenticated user identifier
+     * @return resolved order total price
+     * @throws OrderNotFoundException if the order does not exist or the internal response
+     *         does not contain a total price
+     */
     @Override
     @CircuitBreaker(name = "orderService")
     @Retry(name = "orderService")

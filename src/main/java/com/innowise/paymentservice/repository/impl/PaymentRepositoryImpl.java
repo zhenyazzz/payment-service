@@ -31,11 +31,11 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class PaymentRepositoryImpl implements PaymentRepositoryCustom {
 
-    private static final String FIELD_USER_ID = "userId";
-    private static final String FIELD_ORDER_ID = "orderId";
+    private static final String FIELD_USER_ID = "user_id";
+    private static final String FIELD_ORDER_ID = "order_id";
     private static final String FIELD_STATUS = "status";
-    private static final String FIELD_CREATED_AT = "createdAt";
-    private static final String FIELD_PAYMENT_AMOUNT = "paymentAmount";
+    private static final String FIELD_CREATED_AT = "timestamp";
+    private static final String FIELD_PAYMENT_AMOUNT = "payment_amount";
     private static final String ALIAS_TOTAL_AMOUNT = "totalAmount";
 
     private final MongoTemplate mongoTemplate;

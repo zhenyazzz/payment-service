@@ -176,12 +176,11 @@ This protects retries of the same HTTP request, not order-level business uniquen
 Important fields:
 
 - `id`
-- `orderId`
-- `userId`
+- `order_id`
+- `user_id`
 - `status`
-- `paymentAmount`
-- `createdAt`
-- `updatedAt`
+- `payment_amount`
+- `timestamp`
 
 ### `outbox_events`
 

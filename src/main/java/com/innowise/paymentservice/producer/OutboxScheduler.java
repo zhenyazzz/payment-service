@@ -18,6 +18,12 @@ import com.innowise.paymentservice.repository.OutboxEventRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Periodically publishes unprocessed outbox events to Kafka.
+ *
+ * <p>The scheduler reads a bounded batch of pending events from MongoDB, sends them to the
+ * configured Kafka topic, and marks successful deliveries as processed.</p>
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -33,6 +39,12 @@ public class OutboxScheduler {
     @Value("${kafka.topic.name}")
     private String topicName;
 
+    /**
+     * Processes the next batch of unprocessed outbox events.
+     *
+     * <p>Successful Kafka sends are collected and marked as processed after the batch completes.
+     * Failed sends are logged and left in the outbox for a later retry.</p>
+     */
     @Scheduled(
         fixedDelayString = "${outbox.scheduler.fixed-delay-ms:5000}"
     )

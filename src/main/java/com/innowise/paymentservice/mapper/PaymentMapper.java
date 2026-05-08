@@ -17,7 +17,6 @@ public interface PaymentMapper {
     @Mapping(target = "status", expression = "java(PaymentStatus.PENDING)")
     @Mapping(target = "paymentAmount", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
     Payment toEntity(CreatePaymentRequest request, String userId);
 
     PaymentResponse toResponse(Payment payment);

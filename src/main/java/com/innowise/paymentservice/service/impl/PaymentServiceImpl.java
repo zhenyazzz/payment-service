@@ -34,8 +34,8 @@ import lombok.RequiredArgsConstructor;
  * Default implementation of payment business operations.
  *
  * <p>Handles payment creation, access checks, filtered search, and summary calculations.
- * Coordinates persistence and acquiring calls while preserving idempotent behavior for
- * already paid orders.</p>
+ * Coordinates persistence and acquiring calls while preventing duplicate successful
+ * payments for the same order.</p>
  */
 @Service
 @RequiredArgsConstructor

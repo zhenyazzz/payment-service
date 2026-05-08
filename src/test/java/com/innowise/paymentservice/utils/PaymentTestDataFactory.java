@@ -48,7 +48,6 @@ public class PaymentTestDataFactory {
         p.setStatus(status);
         p.setPaymentAmount(PAYMENT_AMOUNT);
         p.setCreatedAt(FIXED_INSTANT);
-        p.setUpdatedAt(FIXED_INSTANT);
         return p;
     }
 
@@ -63,7 +62,6 @@ public class PaymentTestDataFactory {
         Payment p = buildPayment(paymentId, orderId, userId, status);
         p.setPaymentAmount(paymentAmount);
         p.setCreatedAt(createdAt);
-        p.setUpdatedAt(createdAt);
         return p;
     }
 
