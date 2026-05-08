@@ -127,17 +127,17 @@ class OutboxSchedulerUnitTest {
     }
 
     private void assertSentRecord(
-        ProducerRecord<String, String> record,
+        ProducerRecord<String, String> producerRecord,
         String expectedOrderId,
         String expectedPayload,
         String expectedEventId
     ) {
-        assertThat(record.topic()).isEqualTo(KAFKA_UNIT_TEST_TOPIC);
-        assertThat(record.key()).isEqualTo(expectedOrderId);
-        assertThat(record.value()).isEqualTo(expectedPayload);
-        assertThat(new String(record.headers().lastHeader("event_type").value(), StandardCharsets.UTF_8))
+        assertThat(producerRecord.topic()).isEqualTo(KAFKA_UNIT_TEST_TOPIC);
+        assertThat(producerRecord.key()).isEqualTo(expectedOrderId);
+        assertThat(producerRecord.value()).isEqualTo(expectedPayload);
+        assertThat(new String(producerRecord.headers().lastHeader("event_type").value(), StandardCharsets.UTF_8))
             .isEqualTo("CREATE_PAYMENT");
-        assertThat(new String(record.headers().lastHeader("event_id").value(), StandardCharsets.UTF_8))
+        assertThat(new String(producerRecord.headers().lastHeader("event_id").value(), StandardCharsets.UTF_8))
             .isEqualTo(expectedEventId);
     }
 }

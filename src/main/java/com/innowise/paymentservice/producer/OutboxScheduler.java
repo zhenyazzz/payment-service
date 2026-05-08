@@ -71,13 +71,13 @@ public class OutboxScheduler {
     }
 
     private ProducerRecord<String, String> toProducerRecord(OutboxEvent event) {
-        ProducerRecord<String, String> record = new ProducerRecord<>(
+        ProducerRecord<String, String> producerRecord = new ProducerRecord<>(
             topicName,
             event.getAggregateId(),
             event.getPayload()
         );
-        record.headers().add(EVENT_TYPE_HEADER, event.getEventType().getBytes(StandardCharsets.UTF_8));
-        record.headers().add(EVENT_ID_HEADER, event.getId().getBytes(StandardCharsets.UTF_8));
-        return record;
+        producerRecord.headers().add(EVENT_TYPE_HEADER, event.getEventType().getBytes(StandardCharsets.UTF_8));
+        producerRecord.headers().add(EVENT_ID_HEADER, event.getId().getBytes(StandardCharsets.UTF_8));
+        return producerRecord;
     }
 }
