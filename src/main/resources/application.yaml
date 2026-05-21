@@ -1,21 +1,98 @@
 server:
   port: ${SERVER_PORT:8084}
 
+external:
+  random-api:
+    url: ${RANDOM_API_BASE_URL:https://www.random.org}
+
 spring:
   application:
     name: payment-service
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
+  kafka:
+    producer:
+      acks: all
+      retries: 10
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      properties:
+        enable.idempotence: true
+        delivery.timeout.ms: 120000
+        spring.json.add.type.headers: false
 
-  jpa:
-    hibernate:
-      ddl-auto: validate
+resilience4j:
+  circuitbreaker:
+    instances:
+      orderService:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        permittedNumberOfCallsInHalfOpenState: 3
+        slidingWindowType: COUNT_BASED
+        minimumNumberOfCalls: 5
+        waitDurationInOpenState: 5s
+        failureRateThreshold: 50
+        ignoreExceptions:
+          - org.springframework.web.reactive.function.client.WebClientResponseException.NotFound
+          - org.springframework.web.reactive.function.client.WebClientResponseException.BadRequest
+        recordExceptions:
+          - org.springframework.web.reactive.function.client.WebClientResponseException.InternalServerError
+          - org.springframework.web.reactive.function.client.WebClientResponseException.BadGateway
+          - org.springframework.web.reactive.function.client.WebClientResponseException.ServiceUnavailable
+          - org.springframework.web.reactive.function.client.WebClientResponseException.GatewayTimeout
+          - org.springframework.web.reactive.function.client.WebClientRequestException
+          - java.util.concurrent.TimeoutException
+          - io.netty.handler.timeout.ReadTimeoutException
 
-  liquibase:
-    enabled: true
-    change-log: classpath:db/changelog/db.changelog-master.yaml
+  retry:
+    instances:
+      randomOrgAcquiring:
+        maxAttempts: 3
+        waitDuration: 1s
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+        retryExceptions:
+          - org.springframework.web.reactive.function.client.WebClientResponseException.InternalServerError
+          - org.springframework.web.reactive.function.client.WebClientResponseException.ServiceUnavailable
+          - org.springframework.web.reactive.function.client.WebClientResponseException.GatewayTimeout
+          - org.springframework.web.reactive.function.client.WebClientRequestException
+          - java.util.concurrent.TimeoutException
+          - io.netty.handler.timeout.ReadTimeoutException
+          - com.innowise.paymentservice.exception.external.PaymentProviderUnavailableException
+        ignoreExceptions:
+          - org.springframework.web.reactive.function.client.WebClientResponseException.NotFound
+          - org.springframework.web.reactive.function.client.WebClientResponseException.BadRequest
+      orderService:
+        maxAttempts: 3
+        waitDuration: 1s
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+        retryExceptions:
+          - org.springframework.web.reactive.function.client.WebClientResponseException.InternalServerError
+          - org.springframework.web.reactive.function.client.WebClientResponseException.BadGateway
+          - org.springframework.web.reactive.function.client.WebClientResponseException.ServiceUnavailable
+          - org.springframework.web.reactive.function.client.WebClientResponseException.GatewayTimeout
+          - org.springframework.web.reactive.function.client.WebClientRequestException
+          - java.util.concurrent.TimeoutException
+          - io.netty.handler.timeout.ReadTimeoutException
+        ignoreExceptions:
+          - org.springframework.web.reactive.function.client.WebClientResponseException.NotFound
+          - org.springframework.web.reactive.function.client.WebClientResponseException.BadRequest
+      
+kafka:
+  topic:
+    name: ${KAFKA_TOPIC_NAME:payment-events}
 
-  cloud:
-    openfeign:
-      circuitbreaker:
+outbox:
+  scheduler:
+    fixed-delay-ms: ${OUTBOX_SCHEDULER_FIXED_DELAY_MS:5000}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
         enabled: true

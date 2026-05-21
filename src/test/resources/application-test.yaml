@@ -1,0 +1,36 @@
+spring:
+  task:
+    scheduling:
+      enabled: false
+  kafka:
+    listener:
+      auto-startup: false
+    admin:
+      auto-create: true
+    properties:
+      allow.auto.create.topics: true
+    consumer:
+      auto-offset-reset: earliest
+      group-id: payment-service-test-group
+  data:
+    mongodb:
+      auto-index-creation: true
+
+kafka:
+  topic:
+    name: test-payment-events
+
+external:
+  order-service:
+    url: http://localhost:8083
+  random-api:
+    url: https://www.random.org
+
+outbox:
+  scheduler:
+    fixed-delay-ms: 1000
+
+logging:
+  level:
+    org.apache.kafka: WARN
+    org.apache.kafka.clients.NetworkClient: ERROR
